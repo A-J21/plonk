@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# Video build workspace (frames, tools); the finished video lives in docs/media/
+brag-output/
+.claude/
+*.log
