@@ -1,5 +1,11 @@
 // Exporters: HTML (single page or multi-page site), website .zip, PDF, PNG, DOCX, Markdown, text, Plonk JSON, print.
-import { renderList, BLOCKS, collectHeadings } from './blocks.js';
+import { BLOCKS, collectHeadings } from '../blocks/catalog.jsx';
+
+// The static renderer (react-dom/server) is loaded on first export.
+let renderHTML;
+export async function exportReady() {
+  renderHTML ||= (await import('../blocks/static.jsx')).renderHTML;
+}
 import { CONTENT_CSS, themeVars, googleFontsLink, PAGE_SIZES, docPad, onColor } from './theme.js';
 import { walk, slugify, allBlocks, uid } from './store.js';
 import { esc, inlineToMarkdown, inlineToText, inlineToRuns } from './inline.js';
@@ -95,7 +101,7 @@ export function exportHTML(p, { forPrint = false } = {}) {
   const fp = flatten(p);
   const size = PAGE_SIZES[p.pageSize || 'a4'];
   const pad = p.mode === 'site' ? 40 : docPad(p);
-  const body = renderList(fp.blocks, renderCtx(fp, { isStatic: forPrint }));
+  const body = renderHTML(fp.blocks, renderCtx(fp, { isStatic: forPrint }));
   const pageCss = `body{margin:0;background:${forPrint ? p.theme.bg : '#d9d6cf'}}
        .pk-doc{width:${size.w}px;max-width:100%;min-height:${size.h}px;margin:${forPrint ? 0 : '40px auto'};padding:${pad}px;${forPrint ? '' : 'box-shadow:0 20px 60px -20px rgba(0,0,0,.35)'}}
        @page{size:${size.pdf === 'a4' ? 'A4' : 'letter'};margin:0}
@@ -108,7 +114,7 @@ function exportSiteSingle(p) {
   const slugs = pageSlugs(p);
   const href = (pg) => `#/${slugs[pg.id]}`;
   const body = p.pages
-    .map((pg, i) => `<div class="pk-page" data-page="${slugs[pg.id]}" data-title="${esc(pg.name)}"${i ? ' hidden' : ''}>${renderList(pg.blocks, renderCtx(p, { pageId: pg.id, href, isStatic: false }))}</div>`)
+    .map((pg, i) => `<div class="pk-page" data-page="${slugs[pg.id]}" data-title="${esc(pg.name)}"${i ? ' hidden' : ''}>${renderHTML(pg.blocks, renderCtx(p, { pageId: pg.id, href, isStatic: false }))}</div>`)
     .join('\n');
   const script = `
 <script>
@@ -137,7 +143,7 @@ async function exportSiteZip(p) {
   const slugs = pageSlugs(p);
   const href = (pg) => `${slugs[pg.id]}.html`;
   p.pages.forEach((pg, i) => {
-    const body = `<div class="pk-page">${renderList(pg.blocks, renderCtx(p, { pageId: pg.id, href, isStatic: false }))}</div>`;
+    const body = `<div class="pk-page">${renderHTML(pg.blocks, renderCtx(p, { pageId: pg.id, href, isStatic: false }))}</div>`;
     zip.file(`${slugs[pg.id]}.html`, htmlShell(p, body, SITE_CSS + `body{background:${p.theme.bg}}`, i ? `${pg.name} — ${p.name}` : p.name));
   });
   zip.file('README.txt', `${p.name}\n\nMade with Plonk. Upload every file in this folder to any static host\n(Netlify Drop, GitHub Pages, Vercel, your own server). index.html is the home page.\n`);
@@ -148,7 +154,7 @@ async function exportSiteZip(p) {
 async function mountOffscreen(p, width, blocks = p.blocks) {
   const host = document.createElement('div');
   host.style.cssText = `position:fixed;left:-100000px;top:0;width:${width}px;pointer-events:none`;
-  host.innerHTML = `<div class="pk-doc" style="${esc(themeVars(p.theme))};width:${width}px">${renderList(blocks, renderCtx(p))}</div>`;
+  host.innerHTML = `<div class="pk-doc" style="${esc(themeVars(p.theme))};width:${width}px">${renderHTML(blocks, renderCtx(p))}</div>`;
   document.body.appendChild(host);
   await document.fonts.ready;
   await imagesReady(host);
@@ -229,7 +235,7 @@ async function exportPDF(p, onProgress) {
   if (!cuts.length) cuts.push([0, 0]);
 
   const pdf = new jsPDF({ unit: 'px', format: [W, H], orientation: 'portrait', hotfixes: ['px_scaling'], compress: true });
-  const flowHTML = renderList(fp.blocks, renderCtx(fp));
+  const flowHTML = renderHTML(fp.blocks, renderCtx(fp));
   for (let i = 0; i < cuts.length; i++) {
     onProgress?.(`Page ${i + 1} of ${cuts.length}…`);
     const [a, b] = cuts[i];
@@ -581,7 +587,8 @@ function save(blob, name) {
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
-export function printProject(p) {
+export async function printProject(p) {
+  await exportReady();
   const f = document.createElement('iframe');
   f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   document.body.appendChild(f);
@@ -597,6 +604,7 @@ export function printProject(p) {
 
 // Build the file without saving it: returns { blob, name }.
 export async function buildExport(p, format, onProgress, pageId) {
+  await exportReady();
   const name = slug(p.name);
   const text = (str, type) => new Blob([str], { type });
   const fp = flatten(p);
@@ -623,9 +631,12 @@ export async function runExport(p, format, onProgress, pageId) {
 // Exposed for tests / previews.
 export const _internal = { toMarkdown, flatten, exportSiteZip };
 
-export function openSitePreview(p) {
+export async function openSitePreview(p) {
+  const tab = window.open('', '_blank');
+  await exportReady();
   const url = URL.createObjectURL(new Blob([exportHTML(p)], { type: 'text/html' }));
-  window.open(url, '_blank');
+  if (tab) tab.location.href = url;
+  else window.open(url, '_blank');
 }
 
 export const blockCount = (p) => {

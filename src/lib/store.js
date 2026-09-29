@@ -43,10 +43,10 @@ export const slugify = (s) => (s || 'page').toLowerCase().replace(/[^a-z0-9]+/g,
 // Blocks of every page (websites) or the single list (documents).
 export const allBlocks = (p) => (p.mode === 'site' ? p.pages.flatMap((pg) => pg.blocks) : p.blocks);
 
+// Saves a copy (React state is immutable, so never mutate the project passed in).
 export function putProject(project) {
   const list = loadAll().filter((p) => p.id !== project.id);
-  project.updated = Date.now();
-  list.unshift(project);
+  list.unshift({ ...project, updated: Date.now() });
   return saveAll(list);
 }
 

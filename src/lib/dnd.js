@@ -8,6 +8,7 @@ export function initDnd({ stage, overlay, ghostFor, onDrop, onClickNew, onStart,
   const indicator = document.createElement('div');
   indicator.className = 'drop-bar';
   overlay.appendChild(indicator);
+  signal?.addEventListener('abort', () => indicator.remove());
 
   document.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;

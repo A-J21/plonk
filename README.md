@@ -74,22 +74,32 @@ The site is written to `dist/`.
 
 ## How it's built
 
-Plain JavaScript with [Vite](https://vitejs.dev/). No UI framework.
+[React](https://react.dev/) 19 + [Vite](https://vitejs.dev/), with [Immer](https://immerjs.github.io/immer/) for immutable state and undo/redo.
 
 ```
 src/
-  main.js         hash router + toast
-  blocks.js       block catalogue: defaults, fields, renderers, styles
-  theme.js        themes, fonts and the block CSS shared by editor and exports
-  dnd.js          pointer-based drag & drop
-  inspector.js    the right-hand "Tweak" panel
-  export.js       PDF, Word, HTML, website .zip, PNG, Markdown, text
-  store.js        projects in localStorage + block-tree helpers
-  templates.js    starter documents and multi-page sites
-  pages/          home, create and editor screens
-  styles/app.css  the app's look
+  main.jsx               entry point
+  App.jsx                hash router (#/  ·  #/new  ·  #/edit/<id>)
+  blocks/
+    catalog.jsx          every block: defaults, inspector fields, React renderer
+    render.jsx           BlockList / BlockView / Slot, used by the canvas and previews
+    primitives.jsx       Editable text, icons, links, style helpers
+    static.jsx           renders blocks to static HTML for exports (loaded on demand)
+  pages/
+    Home.jsx             landing page + drop-a-brick playground
+    Create.jsx           pick document or website, then a template
+    editor/
+      useEditor.js       editor state, history, autosave and all block operations
+      Editor.jsx         layout + keyboard shortcuts
+      Canvas.jsx         paper, page tabs, overview, selection bar, resize handles
+      Inspector.jsx      the right-hand "Tweak" panel
+      Palette.jsx, TopBar.jsx, Modals.jsx
+  lib/                   plain JS: storage, themes, drag & drop, exports, templates, sounds
+  styles/app.css         the app's look
 ```
 
+- **One set of components for everything:** the same React block components draw the live canvas, the template previews and every export (through `renderToStaticMarkup`), so what you see is exactly what you get.
+- **Typing stays smooth:** text on the canvas is edited in place. React only rewrites it when the value changes from elsewhere (undo, the panel), so the cursor never jumps.
 - **Exports** use [docx](https://github.com/dolanmiu/docx) (Word), [jsPDF](https://github.com/parallax/jsPDF) and [html-to-image](https://github.com/bubkoo/html-to-image) (PDF and PNG), and [JSZip](https://stuk.github.io/jszip/) (website folders).
 - **Fonts** are free, open-licence fonts via [Fontsource](https://fontsource.org/): Unbounded, Bricolage Grotesque, Space Mono, Fraunces, DM Serif Display and Caveat.
 - **Your work stays on your computer:** projects are saved in your browser's local storage. Large photos are scaled down automatically. Export a Plonk file to back a project up.

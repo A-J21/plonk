@@ -1,5 +1,5 @@
 // Starter templates. Each returns a fresh block array.
-import { makeBlock as m } from './blocks.js';
+import { makeBlock as m } from '../blocks/catalog.jsx';
 
 const col = (n, slots, props = {}, style = {}) => m('columns', { n, ...props }, style, slots);
 
