@@ -4,6 +4,8 @@
 
 Plonk is a drag-and-drop playground for **documents** and **websites**. Grab a brick, drop it on the page, style it till it sings, and watch every change land live. When you're done, export to PDF, Word, HTML, a ready-to-host website and more. Everything runs in your browser, with no account and no server.
 
+**[▶ Try it live](https://a-j21.github.io/plonk/)**
+
 <p align="center">
   <a href="docs/media/brag.mp4">
     <img src="docs/media/preview.gif" alt="Plonk in action: bricks drop in to spell PLONK, then blocks are dragged onto a page in the editor" width="760">
